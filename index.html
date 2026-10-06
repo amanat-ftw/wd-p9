@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern To-Do List | IT25069</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .task-item {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 min-h-screen text-slate-100 flex items-center justify-center p-4 sm:p-6 transition-colors duration-300">
+
+    <div class="w-full max-w-md bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 shadow-2xl rounded-2xl p-6 sm:p-8">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    My To-Do List
+                </h1>
+                <p class="text-xs text-purple-300 font-medium mt-1 tracking-wider uppercase">ID: IT25069</p>
+                <p class="text-sm text-slate-400 mt-1">Manage your daily tasks with ease</p>
+            </div>
+            <!-- Theme or reset control button slot -->
+            <button onclick="clearAllCompleted()" class="text-xs text-slate-400 hover:text-pink-400 transition-colors bg-slate-700/50 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-600/50 flex items-center gap-1.5 cursor-pointer" title="Clear completed tasks">
+                <i class="fa-solid fa-broom"></i> Clear Done
+            </button>
+        </div>
+
+        <!-- Input & Add Button Form -->
+        <form id="task-form" onsubmit="handleFormSubmit(event)" class="relative mb-6">
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-list-check"></i>
+                    </span>
+                    <input
+                        id="task"
+                        type="text"
+                        placeholder="What needs to be done today?"
+                        class="w-full bg-slate-900/60 border border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 text-slate-100 placeholder-slate-500 text-sm rounded-xl pl-10 pr-4 py-3 outline-none transition-all duration-200"
+                        autocomplete="off"
+                    >
+                </div>
+                <button
+                    type="submit"
+                    id="submit-btn"
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 active:scale-95 text-white font-medium px-5 py-3 rounded-xl shadow-lg shadow-purple-600/30 transition-all duration-200 flex items-center justify-center shrink-0 cursor-pointer"
+                >
+                    <i class="fa-solid fa-plus text-lg"></i>
+                </button>
+            </div>
+        </form>
+
+        <!-- Filtering & Stats -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-5 pb-4 border-b border-slate-700/60 text-sm">
+            <div class="flex bg-slate-900/70 p-1 rounded-xl border border-slate-700/60 w-full sm:w-auto justify-center">
+                <button onclick="setFilter('all')" id="filter-all" class="flex-1 sm:flex-none px-3 py-1 rounded-lg font-medium text-xs transition-all bg-purple-600 text-white shadow-sm cursor-pointer">All</button>
+                <button onclick="setFilter('active')" id="filter-active" class="flex-1 sm:flex-none px-3 py-1 rounded-lg font-medium text-xs transition-all text-slate-400 hover:text-slate-200 cursor-pointer">Active</button>
+                <button onclick="setFilter('completed')" id="filter-completed" class="flex-1 sm:flex-none px-3 py-1 rounded-lg font-medium text-xs transition-all text-slate-400 hover:text-slate-200 cursor-pointer">Completed</button>
+            </div>
+            <div id="task-counter" class="text-xs text-slate-400 font-medium">
+                0 tasks remaining
+            </div>
+        </div>
+
+        <!-- Task List Container -->
+        <div class="relative min-h-[160px] max-h-[320px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+            <ul id="list" class="space-y-2.5">
+                <!-- Dynamically populated items -->
+            </ul>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-10 text-center">
+                <div class="w-16 h-16 bg-slate-900/50 rounded-full flex items-center justify-center text-slate-600 mb-3 border border-slate-800">
+                    <i class="fa-solid fa-clipboard-list text-2xl"></i>
+                </div>
+                <p class="text-slate-400 text-sm font-medium">No tasks found</p>
+                <p class="text-slate-600 text-xs mt-1">Add a task above to get started!</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Custom Notification/Message Modal (replaces alert) -->
+    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50">
+        <div id="toast-icon" class="text-amber-400">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <p id="toast-message" class="text-sm font-medium">Please enter a task</p>
+    </div>
+
+    <script>
+        // State management
+        let tasks = JSON.parse(localStorage.getItem('tasks_it25069')) || [
+            { id: 1, text: "Design modern user interface", completed: true },
+            { id: 2, text: "Implement local storage persistence", completed: false },
+            { id: 3, text: "Add task filters and counters", completed: false }
+        ];
+        let currentFilter = 'all';
+        let editingId = null;
+
+        // Initialize on load
+        window.onload = function() {
+            renderTasks();
+        };
+
+        // Form submission wrapper
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            addTask();
+        }
+
+        // Add or Update Task
+        function addTask() {
+            let input = document.getElementById("task");
+            let text = input.value.trim();
+
+            if (text === "") {
+                showToast("Please enter a valid task description!", "warning");
+                return;
+            }
+
+            if (editingId !== null) {
+                // Update existing task
+                tasks = tasks.map(t => t.id === editingId ? { ...t, text: text } : t);
+                editingId = null;
+                document.getElementById("submit-btn").innerHTML = '<i class="fa-solid fa-plus text-lg"></i>';
+                showToast("Task updated successfully!", "success");
+            } else {
+                // Create new task object
+                let newTask = {
+                    id: Date.now(),
+                    text: text,
+                    completed: false
+                };
+                tasks.unshift(newTask);
+                showToast("Task added successfully!", "success");
+            }
+
+            input.value = "";
+            saveAndRender();
+        }
+
+        // Toggle task completion
+        function toggleTask(id) {
+            tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+            saveAndRender();
+        }
+
+        // Delete task
+        function deleteTask(id, event) {
+            event.stopPropagation();
+            tasks = tasks.filter(t => t.id !== id);
+            if (editingId === id) {
+                editingId = null;
+                document.getElementById("task").value = "";
+                document.getElementById("submit-btn").innerHTML = '<i class="fa-solid fa-plus text-lg"></i>';
+            }
+            showToast("Task removed", "info");
+            saveAndRender();
+        }
+
+        // Edit task setup
+        function editTask(id, event) {
+            event.stopPropagation();
+            let task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            let input = document.getElementById("task");
+            input.value = task.text;
+            input.focus();
+            editingId = id;
+            
+            document.getElementById("submit-btn").innerHTML = '<i class="fa-solid fa-pen text-lg"></i>';
+        }
+
+        // Filter setter
+        function setFilter(filter) {
+            currentFilter = filter;
+            ['all', 'active', 'completed'].forEach(f => {
+                let btn = document.getElementById(`filter-${f}`);
+                if (f === filter) {
+                    btn.className = "flex-1 sm:flex-none px-3 py-1 rounded-lg font-medium text-xs transition-all bg-purple-600 text-white shadow-sm cursor-pointer";
+                } else {
+                    btn.className = "flex-1 sm:flex-none px-3 py-1 rounded-lg font-medium text-xs transition-all text-slate-400 hover:text-slate-200 cursor-pointer";
+                }
+            });
+            renderTasks();
+        }
+
+        // Clear completed tasks
+        function clearAllCompleted() {
+            let initialLength = tasks.length;
+            tasks = tasks.filter(t => !t.completed);
+            if (tasks.length < initialLength) {
+                showToast("Cleared completed tasks", "success");
+                saveAndRender();
+            } else {
+                showToast("No completed tasks to clear", "info");
+            }
+        }
+
+        // Save to LocalStorage and Render UI
+        function saveAndRender() {
+            localStorage.setItem('tasks_it25069', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        // Render task list and counter
+        function renderTasks() {
+            let list = document.getElementById("list");
+            let emptyState = document.getElementById("empty-state");
+            let counter = document.getElementById("task-counter");
+
+            // Filter tasks
+            let filteredTasks = tasks.filter(t => {
+                if (currentFilter === 'active') return !t.completed;
+                if (currentFilter === 'completed') return t.completed;
+                return true;
+            });
+
+            // Update counter
+            let activeCount = tasks.filter(t => !t.completed).length;
+            counter.innerText = `${activeCount} task${activeCount === 1 ? '' : 's'} remaining`;
+
+            // Clear current list DOM
+            list.innerHTML = "";
+
+            if (filteredTasks.length === 0) {
+                emptyState.classList.remove("hidden");
+            } else {
+                emptyState.classList.add("hidden");
+                
+                filteredTasks.forEach(task => {
+                    let li = document.createElement("li");
+                    li.className = `task-item group bg-slate-900/50 hover:bg-slate-900/80 border ${task.completed ? 'border-slate-800 opacity-75' : 'border-slate-700/70'} p-3.5 rounded-xl flex justify-between items-center transition-all duration-200 cursor-pointer`;
+                    
+                    li.onclick = () => toggleTask(task.id);
+
+                    let leftDiv = document.createElement("div");
+                    leftDiv.className = "flex items-center gap-3.5 overflow-hidden pr-2";
+
+                    // Checkbox indicator
+                    let checkbox = document.createElement("div");
+                    checkbox.className = `w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${task.completed ? 'bg-purple-600 border-purple-600 text-white' : 'border-slate-600 bg-slate-800'}`;
+                    checkbox.innerHTML = task.completed ? '<i class="fa-solid fa-check text-xs"></i>' : '';
+
+                    // Text span
+                    let span = document.createElement("span");
+                    span.className = `text-sm truncate transition-all ${task.completed ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}`;
+                    span.innerText = task.text;
+
+                    leftDiv.appendChild(checkbox);
+                    leftDiv.appendChild(span);
+
+                    // Actions container
+                    let actionsDiv = document.createElement("div");
+                    actionsDiv.className = "flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity";
+
+                    // Edit Button
+                    let editBtn = document.createElement("button");
+                    editBtn.className = "p-1.5 text-slate-400 hover:text-purple-400 hover:bg-slate-800 rounded-lg transition-colors";
+                    editBtn.innerHTML = '<i class="fa-solid fa-pen text-xs"></i>';
+                    editBtn.title = "Edit task";
+                    editBtn.onclick = (e) => editTask(task.id, e);
+
+                    // Delete Button
+                    let deleteBtn = document.createElement("button");
+                    deleteBtn.className = "p-1.5 text-slate-400 hover:text-pink-400 hover:bg-slate-800 rounded-lg transition-colors";
+                    deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can text-xs"></i>';
+                    deleteBtn.title = "Delete task";
+                    deleteBtn.onclick = (e) => deleteTask(task.id, e);
+
+                    actionsDiv.appendChild(editBtn);
+                    actionsDiv.appendChild(deleteBtn);
+
+                    li.appendChild(leftDiv);
+                    li.appendChild(actionsDiv);
+                    list.appendChild(li);
+                });
+            }
+        }
+
+        // Custom Toast Notification System (replaces alert)
+        function showToast(message, type = 'info') {
+            let toast = document.getElementById("toast");
+            let msgEl = document.getElementById("toast-message");
+            let iconEl = document.getElementById("toast-icon");
+
+            msgEl.innerText = message;
+
+            if (type === 'success') {
+                iconEl.className = "text-emerald-400";
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else if (type === 'warning') {
+                iconEl.className = "text-amber-400";
+                iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else {
+                iconEl.className = "text-purple-400";
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            }
+
+            toast.classList.remove("translate-y-20", "opacity-0");
+            
+            setTimeout(() => {
+                toast.classList.add("translate-y-20", "opacity-0");
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
